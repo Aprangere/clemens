@@ -1,0 +1,11 @@
+llama-index-core
+llama-index-vector-stores-chroma
+llama-index-llms-openai-like
+python-dotenv
+llama-index-embeddings-huggingface
+chromadb
+streamlit
+sentence-transformers
+pypdf
+beautifulsoup4
+requests

@@ -1,0 +1,19 @@
+# Secrets
+.env
+app/.env
+
+# Python virtual environment (RAG deps are on global Python, not this venv)
+app/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Claude Code local config
+.claude/
+
+# Editor
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
