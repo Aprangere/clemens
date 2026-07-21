@@ -57,6 +57,24 @@ WEB_SOURCES = [
     "https://www.dg.ens.fr/en/reglement/thurnage/",
     # appendix-for-exthurnes/ et appendix-for-quiet-corridors/ retirées (404, pages disparues)
     # FAQs DG : JS-rendues, contenu vide — à ingérer manuellement en .txt si besoin
+    # ── Portail Rentrée (rentree.ens.psl.eu) — découvert 2026-07-21, scrapable (pas de JS) ──
+    "https://rentree.ens.psl.eu/fr/foire-aux-questions",
+    "https://rentree.ens.psl.eu/fr/adn-ens",
+    "https://rentree.ens.psl.eu/fr/bibliotheques",
+    "https://rentree.ens.psl.eu/fr/comprendre-le-vocabulaire-normalien",
+    "https://rentree.ens.psl.eu/fr/departements",
+    "https://rentree.ens.psl.eu/fr/dispositifs",
+    "https://rentree.ens.psl.eu/fr/feuille-de-route",
+    "https://rentree.ens.psl.eu/fr/frequently-asked-questions-exchange-students",
+    "https://rentree.ens.psl.eu/fr/hebergement",
+    "https://rentree.ens.psl.eu/fr/les-temps-forts",
+    "https://rentree.ens.psl.eu/fr/orientation-agenda",
+    "https://rentree.ens.psl.eu/fr/presentation",
+    "https://rentree.ens.psl.eu/fr/programme",
+    "https://rentree.ens.psl.eu/fr/services-numeriques",
+    "https://rentree.ens.psl.eu/fr/statut-de-fonctionnaire-stagiaire",
+    "https://rentree.ens.psl.eu/fr/welcome",
+    "https://master-sciences-sociales.ens.psl.eu/carte-multifonction/",
     # ── ENS principal ─────────────────────────────────────────────────────────
     "https://www.ens.psl.eu/une-formation-d-exception/admission-concours",
     "https://www.ens.psl.eu/une-formation-d-exception/admission-concours/textes-officiels",
@@ -339,6 +357,19 @@ def ingest(docs: list[Document]):
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
+
+    # Idempotence : purge les chunks existants pour ces URLs avant de réinsérer
+    # (VectorStoreIndex.from_documents n'upsert pas par id_ — sans ça, relancer
+    # ce script duplique tout le contenu déjà ingéré à chaque exécution)
+    sources = sorted({doc.metadata["source"] for doc in docs})
+    removed = 0
+    for src in sources:
+        existing = chroma_collection.get(where={"source": src})
+        if existing["ids"]:
+            chroma_collection.delete(ids=existing["ids"])
+            removed += len(existing["ids"])
+    if removed:
+        print(f"Purge de {removed} chunks existants ({len(sources)} URLs) avant réingestion.")
 
     print(f"\nIndexation de {len(docs)} pages...")
     VectorStoreIndex.from_documents(

@@ -99,6 +99,19 @@ def ingest(poc: bool = False):
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
 
+    # Idempotence : purge les chunks existants pour ces fichiers avant de réinsérer
+    # (VectorStoreIndex.from_documents n'upsert pas par id_ — sans ça, relancer
+    # ce script duplique tout le contenu déjà ingéré à chaque exécution)
+    file_names = sorted({doc.metadata["file_name"] for doc in documents})
+    removed = 0
+    for fn in file_names:
+        existing = chroma_collection.get(where={"file_name": fn})
+        if existing["ids"]:
+            chroma_collection.delete(ids=existing["ids"])
+            removed += len(existing["ids"])
+    if removed:
+        print(f"Purge de {removed} chunks existants ({len(file_names)} fichiers) avant réingestion.")
+
     print("Génération des embeddings...")
     VectorStoreIndex.from_documents(
         documents,
